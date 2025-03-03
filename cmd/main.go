@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hermangoncalves/routerflow-api/features/auth"
 	"github.com/hermangoncalves/routerflow-api/pkg/db"
 )
 
 func main() {
-	_ = db.InitDB()
+	db := db.InitDB()
 
 	r := gin.Default()
 
@@ -17,6 +18,8 @@ func main() {
 			"message": "pong",
 		})
 	})
+
+	auth.SetupRoutes(r, db)
 
 	r.Run(":8080")
 }
