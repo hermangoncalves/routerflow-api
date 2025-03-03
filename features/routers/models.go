@@ -8,6 +8,12 @@ type Router struct {
 	Password string
 }
 
+type RouterRegisterRequest struct {
+	IP       string `json:"ip" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
 // RouterStatus represents the structured system status response
 type RouterStatus struct {
 	Uptime               string `json:"uptime"`

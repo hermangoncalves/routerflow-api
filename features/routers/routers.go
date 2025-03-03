@@ -2,15 +2,18 @@ package routers
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-routeros/routeros/v3"
+	"github.com/hermangoncalves/routerflow-api/pkg/utils"
 )
 
 func SetupRoutes(r *gin.Engine, db *sql.DB) {
 	r.GET("/routers/:id/status", statusHandler(db))
+	r.POST("/routers/register", registerHandler(db))
 }
 
 func statusHandler(db *sql.DB) gin.HandlerFunc {
@@ -33,7 +36,8 @@ func statusHandler(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		client, err := routeros.Dial(router.IP, router.Username, router.Password)
+		addr := fmt.Sprintf("%s:%s", router.IP, "8728")
+		client, err := routeros.Dial(addr, router.Username, router.Password)
 		if err != nil {
 			log.Println("Failed to connect to router ID:", router.ID, "-", err)
 			ctx.JSON(500, gin.H{"error": "connection failed"})
@@ -96,4 +100,44 @@ func statusHandler(db *sql.DB) gin.HandlerFunc {
 		ctx.JSON(http.StatusOK, status)
 	}
 
+}
+
+func registerHandler(db *sql.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var req RouterRegisterRequest
+		if !utils.ValidShouldBindJSON(ctx, &req) {
+			return
+		}
+
+		var exists bool
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM routers WHERE ip = ?)", req.IP).Scan(&exists)
+		if err != nil {
+			log.Println("Failed to check if router exists:", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		if exists {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "router with this IP already exists"})
+			return
+		}
+
+		result, err := db.Exec("INSERT INTO routers (ip, username, password) VALUES (?, ?, ?)", req.IP, req.Username, req.Password)
+		if err != nil {
+			log.Println("Failed to register router:", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			log.Println("Failed to get last inserted ID:", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			return
+		}
+
+		log.Printf("Router registered with ID: %d\n", id)
+		ctx.JSON(http.StatusCreated, gin.H{"message": "router registered", "id": id})
+
+	}
 }
