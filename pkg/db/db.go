@@ -6,33 +6,33 @@ import (
 	"os"
 	"path/filepath"
 
+	"golang.org/x/crypto/bcrypt"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// InitDB inicializa e retorna a conexão com o banco de dados SQLite
+// InitDB initializes and returns a connection to the SQLite database.
 func InitDB() *sql.DB {
-	// Define o caminho absoluto para o arquivo de log
+	// Set up logging
 	logPath := filepath.Join(".", "app.log")
 	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v", err)
 	}
-	defer logFile.Close() // Fecha o arquivo no final da execução
-
 	log.SetOutput(logFile)
 
-	// Define o caminho absoluto para o banco de dados SQLite
+	// Define database path and open connection
 	dbPath := filepath.Join(".", "sqlite.db")
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 
-	// Verifica se a conexão foi estabelecida corretamente
+	// Check database connection
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Create tables if they do not exist
 	schema := `
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +52,34 @@ func InitDB() *sql.DB {
 		log.Fatalf("Failed to initialize database schema: %v", err)
 	}
 
+	// Ensure default admin user exists
+	createDefaultUser(db)
+
 	log.Println("Database initialized successfully")
 	return db
+}
+
+// createDefaultUser ensures the default admin user exists
+func createDefaultUser(db *sql.DB) {
+	// Check if user already exists
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = 'admin'").Scan(&count)
+	if err != nil {
+		log.Fatalf("Failed to check existing users: %v", err)
+	}
+
+	// If no admin user exists, create one
+	if count == 0 {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("Failed to hash default password: %v", err)
+		}
+
+		_, err = db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", "admin", string(hashedPassword))
+		if err != nil {
+			log.Fatalf("Failed to create default admin user: %v", err)
+		}
+
+		log.Println("Default admin user created")
+	}
 }
