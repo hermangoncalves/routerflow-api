@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hermangoncalves/routerflow-api/features/auth"
+	"github.com/hermangoncalves/routerflow-api/features/routers"
 	"github.com/hermangoncalves/routerflow-api/pkg/db"
 )
 
@@ -20,6 +21,7 @@ func main() {
 	})
 
 	auth.SetupRoutes(r, db)
+	routers.SetupRoutes(r, db)
 
 	r.Run(":8080")
 }
