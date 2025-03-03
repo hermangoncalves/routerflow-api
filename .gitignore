@@ -1,0 +1,55 @@
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the Go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Logs & debugging files
+*.log
+*.trace
+*.prof
+*.pprof
+
+# Editor & IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependency directories
+vendor/
+
+# Go build cache and module cache
+go.sum
+/go/pkg/
+/go/bin/
+/go/build/
+
+# Air live reload temp files
+.air.toml
+tmp/
+bin/
+
+# Docker-related files (if using Docker)
+docker-compose.override.yml
+.env
+.env.local
+.env.*.local
+
+# Node-related files (if frontend exists in the repo)
+node_modules/
+dist/
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db
